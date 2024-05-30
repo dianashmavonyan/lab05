@@ -1,60 +1,54 @@
-№1 на С++
+№1 на Python
 
 
-#include <iostream>
-#include <vector>
+import numpy as np
 
-using namespace std;
+# Define the data points
+xi = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+yi = np.array([0.0, 0.5, 0.86603, 1.0, 0.86603])
 
-void linearRegression(const vector<double>& x, const vector<double>& y, double& a, double& b) {
-    int n = x.size();
-    double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+# Build the cubic spline
+def cubic_spline(xi, yi):
+    n = len(xi)
+    h = np.diff(xi)
+    A = np.zeros((n, n))
+    b = np.zeros(n)
 
-    for (int i = 0; i < n; ++i) {
-        sumX += x[i];
-        sumY += y[i];
-        sumXY += x[i] * y[i];
-        sumXX += x[i] * x[i];
-    }
+    # Set up the tridiagonal system of equations
+    for i in range(1, n - 1):
+        A[i, i - 1] = h[i - 1]
+        A[i, i] = 2 * (h[i - 1] + h[i])
+        A[i, i + 1] = h[i]
 
-    a = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    b = (sumY * sumXX - sumX * sumXY) / (n * sumXX - sumX * sumX);
-}
+        b[i] = 3 * ((yi[i + 1] - yi[i]) / h[i] - (yi[i] - yi[i - 1]) / h[i - 1])
 
-void quadraticRegression(const vector<double>& x, const vector<double>& y, double& a, double& b, double& c) {
-    int n = x.size();
-    double sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumXXX = 0, sumXXXX = 0, sumXXY = 0;
+    # Enforce zero curvature boundary conditions
+    A[0, 0] = 2 * h[0]
+    A[0, 1] = h[0]
+    b[0] = 0
 
-    for (int i = 0; i < n; ++i) {
-        sumX += x[i];
-        sumY += y[i];
-        sumXY += x[i] * y[i];
-        sumXX += x[i] * x[i];
-        sumXXX += x[i] * x[i] * x[i];
-        sumXXXX += x[i] * x[i] * x[i] * x[i];
-        sumXXY += x[i] * x[i] * y[i];
-    }
+    A[n - 1, n - 2] = h[n - 2]
+    A[n - 1, n - 1] = 2 * h[n - 2]
+    b[n - 1] = 0
 
-    double denom = n * (sumXX * sumXXXX - sumXXX * sumXXX) - sumX * (sumX * sumXXXX - sumXX * sumXXX) + sumXX * (sumX * sumXXX - sumXX * sumXX);
+    # Solve the tridiagonal system of equations
+    c = np.linalg.solve(A, b)
 
-    a = (n * (sumXX * sumXXY - sumXXX * sumXY) - sumX * (sumX * sumXXY - sumXX * sumXY) + sumXX * (sumX * sumXY - sumXX * sumY)) / denom;
-    b = (n * (sumXY * sumXXXX - sumXXY * sumXXX) - sumY * (sumX * sumXXXX - sumXX * sumXXX) + sumXX * (sumY * sumXXX - sumXXY * sumX)) / denom;
-    c = (sumXX * (sumXX * sumY - sumXY * sumX) - sumX * (sumXX * sumXY - sumX * sumXXY) + sumXXX * (sumX * sumXY - sumXX * sumY)) / denom;
-}
+    # Compute the coefficients of the cubic spline
+    a = yi
+    b = (yi[1:] - yi[:-1]) / h - h * (2 * c[:-1] + c[1:]) / 3
+    d = (c[1:] - c[:-1]) / (3 * h)
 
-int main() {
-    setlocale(LC_ALL, "Russian");
-    vector<double> x = { 0.0, 1.0, 2.0, 3.0, 4.0 };
-    vector<double> y = { 0.0, 0.5, 0.86603, 1.0, 0.86603 };
+    return a, b, c, d
 
-    double a1, b1; 
-    double a2, b2, c2; 
+a, b, c, d = cubic_spline(xi, yi)
 
-    linearRegression(x, y, a1, b1);
-    cout << "Линейная регрессия (первой степени): y = " << a1 << " * x + " << b1 << endl;
+# Evaluate the cubic spline at x*
+x_star = 1.5
+i = np.searchsorted(xi, x_star) - 1
+h = xi[i + 1] - xi[i]
 
-    quadraticRegression(x, y, a2, b2, c2);
-    cout << "Квадратичная регрессия (второй степени): y = " << a2 << " * x^2 + " << b2 << " * x + " << c2 << endl;
+y_star = a[i] + b[i] * (x_star - xi[i]) + c[i] * (x_star - xi[i])**2 + d[i] * (x_star - xi[i])**3
 
-    return 0;
-}
+# Print the result
+print("Value of the cubic spline at x* = 1.5:", y_star)
