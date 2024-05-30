@@ -1,3 +1,62 @@
-№2 на Python
+№2 на С++
 
 
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+// Lagrange interpolation function
+double lagrange_interpolation(double x, const vector<double>& xi, const vector<double>& yi) {
+    int n = xi.size();
+    double L = 0;
+    for (int i = 0; i < n; i++) {
+        double term = 1;
+        for (int j = 0; j < n; j++) {
+            if (i == j) {
+                continue;
+            }
+            term *= (x - xi[j]) / (xi[i] - xi[j]);
+        }
+        L += term * yi[i];
+    }
+    return L;
+}
+
+int main() {
+    // Define the data points
+    vector<double> xi = {0.1 * M_PI, 0.2 * M_PI, 0.3 * M_PI, 0.4 * M_PI};
+    vector<double> yi;
+    for (double x : xi) {
+        yi.push_back(sin(x));
+    }
+
+    // Evaluate the Lagrange interpolation polynomial at x*
+    double x_star = 0.25 * M_PI;
+    double y_star_interp = lagrange_interpolation(x_star, xi, yi);
+
+    // Compute the error
+    double y_star_exact = sin(x_star);
+    double error = abs(y_star_interp - y_star_exact);
+
+    // Print the results
+    cout << "Lagrange interpolation polynomial: ";
+    for (int i = 0; i < xi.size(); i++) {
+        cout << "(x - " << xi[i] << ") / (" << xi[i] << " - ";
+        for (int j = 0; j < xi.size(); j++) {
+            if (i == j) {
+                continue;
+            }
+            cout << xi[j] << ") * " << yi[i];
+        }
+        cout << " + ";
+    }
+    cout << endl;
+
+    cout << "Interpolated value at x* = 0.25π: " << y_star_interp << endl;
+
+    cout << "Error: " << error << endl;
+
+    return 0;
+}
